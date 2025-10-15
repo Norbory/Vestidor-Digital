@@ -1,0 +1,187 @@
+<div class="wardrobe">
+  <div class="header">
+    <h2>Mi Guardarropa</h2>
+    <div class="header-actions">
+      <button class="add-btn" (click)="toggleAddForm()">
+        <span *ngIf="!showAddForm">➕ Agregar Prenda</span>
+        <span *ngIf="showAddForm">❌ Cancelar</span>
+      </button>
+      <button class="sync-btn" (click)="syncWithMongoDB()" [disabled]="isLoading">
+        🔄 Sincronizar con BD
+      </button>
+    </div>
+  </div>
+
+  <!-- Estadísticas rápidas -->
+  <div class="stats" *ngIf="myClothes.length > 0">
+    <h3>Resumen del Guardarropa</h3>
+    <div class="stats-grid">
+      <div class="stat-item" *ngFor="let type of clothingTypes">
+        <span class="stat-label">{{ type | titlecase }}:</span>
+        <span class="stat-value">{{ getItemsByType(type).length }}</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Formulario para agregar nueva prenda -->
+  <div class="add-form" *ngIf="showAddForm">
+    <h3>Agregar Nueva Prenda</h3>
+    <form (ngSubmit)="saveItem()">
+      <div class="form-row">
+        <div class="form-group">
+          <label for="itemName">Nombre *</label>
+          <input 
+            id="itemName" 
+            type="text" 
+            [(ngModel)]="newItem.name" 
+            name="itemName"
+            placeholder="Ej: Camisa azul formal"
+            required>
+        </div>
+        
+        <div class="form-group">
+          <label for="itemType">Tipo *</label>
+          <select id="itemType" [(ngModel)]="newItem.type" name="itemType" required>
+            <option *ngFor="let type of clothingTypes" [value]="type">
+              {{ type | titlecase }}
+            </option>
+          </select>
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label for="itemColor">Color *</label>
+          <input 
+            id="itemColor" 
+            type="text" 
+            [(ngModel)]="newItem.color" 
+            name="itemColor"
+            placeholder="Ej: azul marino"
+            required>
+        </div>
+        
+        <div class="form-group">
+          <label for="itemBrand">Marca</label>
+          <input 
+            id="itemBrand" 
+            type="text" 
+            [(ngModel)]="newItem.brand" 
+            name="itemBrand"
+            placeholder="Ej: Zara, H&M">
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label for="itemDescription">Descripción</label>
+        <textarea 
+          id="itemDescription" 
+          [(ngModel)]="newItem.description" 
+          name="itemDescription"
+          placeholder="Describe la prenda (opcional)"></textarea>
+      </div>
+
+      <div class="form-group">
+        <label for="itemImage">Imagen</label>
+        <div class="image-upload">
+          <img [src]="newItem.imageUrl" alt="Preview" class="image-preview">
+          <input 
+            type="file" 
+            (change)="onImageUpload($event)" 
+            accept="image/*" 
+            #fileInput>
+          <button type="button" (click)="fileInput.click()" class="upload-btn">
+            📁 Subir Imagen
+          </button>
+        </div>
+      </div>
+
+      <div class="form-actions">
+        <button type="submit" class="save-btn" [disabled]="!newItem.name || !newItem.color">
+          💾 Guardar Prenda
+        </button>
+        <button type="button" (click)="resetForm()" class="reset-btn">
+          🔄 Limpiar
+        </button>
+      </div>
+    </form>
+  </div>
+
+  <!-- Mensaje de error -->
+  <div *ngIf="errorMessage" class="error-message">
+    ❌ {{ errorMessage }}
+  </div>
+
+  <!-- Estado de carga -->
+  <div *ngIf="isLoading" class="loading">
+    <div class="spinner"></div>
+    <p>Cargando guardarropa...</p>
+  </div>
+
+  <!-- Grid de prendas por categoría -->
+  <div class="wardrobe-content" *ngIf="!isLoading">
+    <!-- Mostrar por categorías -->
+    <div *ngFor="let type of clothingTypes" class="category-section">
+      <ng-container *ngIf="getItemsByType(type).length > 0">
+        <h3 class="category-title">
+          {{ type | titlecase }} ({{ getItemsByType(type).length }})
+        </h3>
+        
+        <div class="items-grid">
+          <div 
+            *ngFor="let item of getItemsByType(type)" 
+            class="item-card"
+            (click)="selectItem(item)">
+            
+            <div class="item-image">
+              <img [src]="item.imageUrl" [alt]="item.name" 
+                   onerror="this.src='/assets/placeholder-clothing.jpg'">
+              <div class="item-actions">
+                <button class="delete-btn" (click)="$event.stopPropagation(); deleteItem(item)" title="Eliminar">
+                  🗑️
+                </button>
+              </div>
+            </div>
+            
+            <div class="item-info">
+              <h4>{{ item.name }}</h4>
+              <p class="brand" *ngIf="item.brand">{{ item.brand }}</p>
+              <p class="color">{{ item.color }}</p>
+              <p class="description" *ngIf="item.description">{{ item.description }}</p>
+              <div class="tags" *ngIf="item.tags && item.tags.length > 0">
+                <span class="tag" *ngFor="let tag of item.tags">{{ tag }}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </ng-container>
+    </div>
+
+    <!-- Estado vacío -->
+    <div class="empty-state" *ngIf="myClothes.length === 0">
+      <div class="empty-content">
+        <h3>👔 Tu guardarropa está vacío</h3>
+        <p>Comienza agregando tus primeras prendas haciendo click en "Agregar Prenda"</p>
+        <button class="start-btn" (click)="toggleAddForm()">
+          ➕ Agregar mi primera prenda
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Info sobre MongoDB -->
+  <div class="mongodb-info">
+    <h4>ℹ️ Información sobre el almacenamiento</h4>
+    <p>
+      <strong>Actualmente:</strong> Los datos se guardan localmente en tu navegador.<br>
+      <strong>Próximamente:</strong> Se implementará la sincronización automática con MongoDB para 
+      acceder a tu guardarropa desde cualquier dispositivo.
+    </p>
+    <div class="feature-list">
+      <span class="feature available">✅ Guardar localmente</span>
+      <span class="feature pending">⏳ Sincronización automática</span>
+      <span class="feature pending">⏳ Acceso multi-dispositivo</span>
+      <span class="feature pending">⏳ Backup en la nube</span>
+    </div>
+  </div>
+</div>

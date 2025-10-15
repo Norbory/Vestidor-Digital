@@ -40,3 +40,10 @@ testem.log
 # System files
 .DS_Store
 Thumbs.db
+
+# Environment variables - NUNCA subir API keys!
+.env
+.env.local
+.env.production
+/src/environments/environment.ts
+# Mantén solo el environment.prod.ts y environment.example.ts en el repo

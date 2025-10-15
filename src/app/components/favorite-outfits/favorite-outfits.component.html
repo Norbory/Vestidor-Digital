@@ -1,0 +1,256 @@
+<div class="favorite-outfits">
+  <!-- Header con estadísticas -->
+  <div class="header">
+    <h2>Conjuntos Preferidos</h2>
+    <div class="stats-bar">
+      <div class="stat-item">
+        <span class="stat-number">{{ getStats().total }}</span>
+        <span class="stat-label">Total</span>
+      </div>
+      <div class="stat-item favorites">
+        <span class="stat-number">{{ getStats().favorites }}</span>
+        <span class="stat-label">Favoritos</span>
+      </div>
+      <div class="stat-item">
+        <span class="stat-number">{{ getStats().withImages }}</span>
+        <span class="stat-label">Con imagen</span>
+      </div>
+      <div class="stat-item">
+        <span class="stat-number">{{ getStats().recent }}</span>
+        <span class="stat-label">Recientes</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Acciones principales -->
+  <div class="actions-bar">
+    <button class="save-current-btn" (click)="openSaveDialog()" [disabled]="!currentOutfit || currentOutfit.items.length === 0">
+      ⭐ Guardar Conjunto Actual
+    </button>
+    
+    <div class="action-buttons">
+      <button class="export-btn" (click)="exportOutfits()" [disabled]="savedOutfits.length === 0">
+        📤 Exportar
+      </button>
+      
+      <input type="file" (change)="onFileImport($event)" accept=".json" #fileInput style="display: none;">
+      <button class="import-btn" (click)="fileInput.click()">
+        📥 Importar
+      </button>
+    </div>
+  </div>
+
+  <!-- Filtros y ordenamiento -->
+  <div class="filters-section">
+    <h3>Filtros y Ordenamiento</h3>
+    <div class="filters-controls">
+      <div class="filter-group">
+        <label>
+          <input type="checkbox" [(ngModel)]="showOnlyFavorites">
+          Solo mostrar favoritos
+        </label>
+      </div>
+
+      <div class="sort-group">
+        <label for="sortBy">Ordenar por:</label>
+        <select id="sortBy" [(ngModel)]="sortBy">
+          <option value="date">Fecha de creación</option>
+          <option value="name">Nombre</option>
+          <option value="favorites">Favoritos primero</option>
+        </select>
+        
+        <button class="sort-order-btn" (click)="sortOrder = sortOrder === 'asc' ? 'desc' : 'asc'">
+          <span *ngIf="sortOrder === 'desc'">⬇️</span>
+          <span *ngIf="sortOrder === 'asc'">⬆️</span>
+        </button>
+      </div>
+
+      <button class="clear-filters-btn" (click)="clearFilters()">
+        🗑️ Limpiar filtros
+      </button>
+    </div>
+  </div>
+
+  <!-- Mensaje de error -->
+  <div *ngIf="errorMessage" class="error-message">
+    ❌ {{ errorMessage }}
+  </div>
+
+  <!-- Estado de carga -->
+  <div *ngIf="isLoading" class="loading">
+    <div class="spinner"></div>
+    <p>Cargando conjuntos...</p>
+  </div>
+
+  <!-- Diálogo para guardar conjunto -->
+  <div class="save-dialog" *ngIf="showSaveDialog">
+    <div class="dialog-backdrop" (click)="closeSaveDialog()"></div>
+    <div class="dialog-content">
+      <h3>💾 Guardar Conjunto</h3>
+      
+      <div class="current-outfit-preview" *ngIf="currentOutfit">
+        <h4>Conjunto a guardar:</h4>
+        <div class="outfit-items">
+          <div *ngFor="let item of currentOutfit.items" class="preview-item">
+            <img [src]="item.imageUrl" [alt]="item.name">
+            <span>{{ item.name }}</span>
+          </div>
+        </div>
+      </div>
+
+      <form (ngSubmit)="saveCurrentOutfit()">
+        <div class="form-group">
+          <label for="outfitName">Nombre del conjunto *</label>
+          <input 
+            id="outfitName" 
+            type="text" 
+            [(ngModel)]="newOutfitName" 
+            name="outfitName"
+            placeholder="Ej: Look casual de viernes"
+            required>
+        </div>
+
+        <div class="form-group">
+          <label for="outfitDescription">Descripción (opcional)</label>
+          <textarea 
+            id="outfitDescription" 
+            [(ngModel)]="newOutfitDescription" 
+            name="outfitDescription"
+            placeholder="Describe el conjunto, ocasión de uso, etc."></textarea>
+        </div>
+
+        <div class="dialog-actions">
+          <button type="submit" class="save-btn" [disabled]="!newOutfitName.trim()">
+            💾 Guardar
+          </button>
+          <button type="button" (click)="closeSaveDialog()" class="cancel-btn">
+            ❌ Cancelar
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Grid de conjuntos -->
+  <div class="outfits-grid" *ngIf="!isLoading">
+    <div *ngFor="let outfit of getDisplayedOutfits()" class="outfit-card">
+      <!-- Imagen del conjunto -->
+      <div class="outfit-image" (click)="selectOutfit(outfit)">
+        <img 
+          *ngIf="outfit.imageUrl" 
+          [src]="outfit.imageUrl" 
+          [alt]="outfit.name"
+          onerror="this.style.display='none'">
+        
+        <!-- Vista previa cuando no hay imagen generada -->
+        <div *ngIf="!outfit.imageUrl" class="outfit-preview">
+          <div class="preview-items">
+            <div *ngFor="let item of outfit.items.slice(0, 4)" class="mini-item">
+              <img [src]="item.imageUrl" [alt]="item.name">
+            </div>
+          </div>
+          <div *ngIf="outfit.items.length > 4" class="more-items">
+            +{{ outfit.items.length - 4 }}
+          </div>
+        </div>
+
+        <!-- Indicador de favorito -->
+        <div class="favorite-badge" *ngIf="outfit.isFavorite">⭐</div>
+        
+        <!-- Contador de prendas -->
+        <div class="items-count">{{ outfit.items.length }} prendas</div>
+      </div>
+
+      <!-- Información del conjunto -->
+      <div class="outfit-info">
+        <h4>{{ outfit.name }}</h4>
+        <p *ngIf="outfit.description" class="description">{{ outfit.description }}</p>
+        <p class="preview-text">{{ getOutfitPreviewText(outfit) }}</p>
+        <div class="outfit-meta">
+          <span class="date">{{ outfit.createdAt | date:'dd/MM/yyyy' }}</span>
+        </div>
+      </div>
+
+      <!-- Acciones del conjunto -->
+      <div class="outfit-actions">
+        <button class="use-btn" (click)="selectOutfit(outfit)" title="Usar este conjunto">
+          👕 Usar
+        </button>
+        
+        <button 
+          class="favorite-btn" 
+          (click)="toggleFavorite(outfit)"
+          [class.is-favorite]="outfit.isFavorite"
+          title="Marcar/desmarcar como favorito">
+          <span *ngIf="outfit.isFavorite">⭐</span>
+          <span *ngIf="!outfit.isFavorite">☆</span>
+        </button>
+        
+        <button class="delete-btn" (click)="deleteOutfit(outfit)" title="Eliminar conjunto">
+          🗑️
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Estado vacío -->
+  <div class="empty-state" *ngIf="!isLoading && getDisplayedOutfits().length === 0">
+    <div class="empty-content">
+      <div *ngIf="!showOnlyFavorites">
+        <h3>👔 No tienes conjuntos guardados</h3>
+        <p>Crea tu primer conjunto seleccionando prendas y guardándolo como favorito</p>
+        <button class="start-btn" (click)="openSaveDialog()" [disabled]="!currentOutfit || currentOutfit.items.length === 0">
+          ⭐ Guardar conjunto actual
+        </button>
+      </div>
+      
+      <div *ngIf="showOnlyFavorites">
+        <h3>⭐ No tienes conjuntos marcados como favoritos</h3>
+        <p>Marca algunos conjuntos como favoritos para verlos aquí</p>
+        <button class="clear-filter-btn" (click)="showOnlyFavorites = false">
+          👀 Ver todos los conjuntos
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Vista detallada de conjuntos por tipo -->
+  <div class="outfit-details" *ngIf="savedOutfits.length > 0">
+    <h3>📊 Análisis de Conjuntos</h3>
+    <div class="analysis-grid">
+      <div class="analysis-card">
+        <h4>Prendas más usadas</h4>
+        <p class="coming-soon">Próximamente: análisis de frecuencia de uso</p>
+      </div>
+      
+      <div class="analysis-card">
+        <h4>Colores preferidos</h4>
+        <p class="coming-soon">Próximamente: análisis de paleta de colores</p>
+      </div>
+      
+      <div class="analysis-card">
+        <h4>Estilos más frecuentes</h4>
+        <p class="coming-soon">Próximamente: categorización automática</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Información adicional -->
+  <div class="info-section">
+    <h4>ℹ️ Gestión de Conjuntos</h4>
+    <div class="tips">
+      <div class="tip">
+        <strong>💡 Consejo:</strong> Guarda diferentes versiones de un mismo estilo para distintas ocasiones
+      </div>
+      <div class="tip">
+        <strong>⭐ Favoritos:</strong> Marca como favoritos tus conjuntos más exitosos
+      </div>
+      <div class="tip">
+        <strong>📤 Exportar:</strong> Respalda tus conjuntos exportándolos como archivo JSON
+      </div>
+      <div class="tip">
+        <strong>🎨 Imágenes:</strong> Los conjuntos generados con Gemini se guardan con su imagen
+      </div>
+    </div>
+  </div>
+</div>

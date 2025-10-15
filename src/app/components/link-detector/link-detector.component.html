@@ -1,0 +1,171 @@
+<div class="link-detector">
+  <h2>Detector de Ropa por Enlaces</h2>
+  <p class="subtitle">Ingresa el enlace de una página de tienda online y detectaremos automáticamente la ropa disponible</p>
+
+  <!-- Formulario de entrada -->
+  <div class="url-input-section">
+    <div class="input-group">
+      <input 
+        type="url" 
+        [(ngModel)]="inputUrl" 
+        placeholder="Ej: https://www.zara.com/es/es/camisa-popelin-p12345678.html"
+        class="url-input"
+        [disabled]="isAnalyzing">
+      
+      <button 
+        (click)="analyzeUrl()" 
+        [disabled]="isAnalyzing || !inputUrl.trim()"
+        class="analyze-btn">
+        <span *ngIf="!isAnalyzing">🔍 Analizar Página</span>
+        <span *ngIf="isAnalyzing">⏳ Analizando...</span>
+      </button>
+    </div>
+
+    <!-- Sitios soportados -->
+    <div class="supported-sites">
+      <h4>🌐 Sitios web soportados:</h4>
+      <div class="sites-grid">
+        <span *ngFor="let site of supportedSites" class="site-badge">{{ site }}</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Estado de análisis -->
+  <div *ngIf="isAnalyzing" class="analyzing-state">
+    <div class="spinner"></div>
+    <h3>Analizando página web...</h3>
+    <div class="analysis-steps">
+      <div class="step active">📥 Descargando contenido</div>
+      <div class="step active">🔍 Detectando productos</div>
+      <div class="step active">🏷️ Extrayendo información</div>
+      <div class="step">✅ Finalizando análisis</div>
+    </div>
+  </div>
+
+  <!-- Mensaje de error -->
+  <div *ngIf="errorMessage" class="error-message">
+    ❌ {{ errorMessage }}
+  </div>
+
+  <!-- Resultados detectados -->
+  <div *ngIf="analysisComplete && detectedItems.length > 0" class="results-section">
+    <div class="results-header">
+      <h3>🎯 Prendas Detectadas ({{ detectedItems.length }})</h3>
+      <button class="clear-btn" (click)="clearResults()">🗑️ Limpiar Resultados</button>
+    </div>
+
+    <div class="detected-items">
+      <div *ngFor="let item of detectedItems" class="detected-card">
+        <!-- Imagen del producto -->
+        <div class="item-image">
+          <img [src]="item.imageUrl" [alt]="item.name" 
+               onerror="this.src='/assets/placeholder-clothing.jpg'">
+          
+          <!-- Indicador de confianza -->
+          <div class="confidence-badge" 
+               [style.background-color]="getConfidenceColor(item.confidence)">
+            {{ (item.confidence * 100) | number:'1.0-0' }}%
+          </div>
+          
+          <!-- Indicador de oferta -->
+          <div *ngIf="item.onSale" class="sale-badge">🔥 OFERTA</div>
+        </div>
+
+        <!-- Información del producto -->
+        <div class="item-details">
+          <h4>{{ item.name }}</h4>
+          
+          <div class="item-meta">
+            <span class="brand">{{ item.brand }}</span>
+            <span class="type">{{ item.type | titlecase }}</span>
+            <span class="color" [style.color]="item.color">● {{ item.color }}</span>
+          </div>
+
+          <p *ngIf="item.description" class="description">{{ item.description }}</p>
+
+          <div class="price-section" *ngIf="item.originalPrice">
+            <span class="price">${{ item.originalPrice }}</span>
+            <span *ngIf="item.onSale" class="sale-indicator">En oferta</span>
+          </div>
+
+          <div class="confidence-info">
+            <span class="confidence-label">Confianza de detección:</span>
+            <span class="confidence-value" [style.color]="getConfidenceColor(item.confidence)">
+              {{ getConfidenceText(item.confidence) }} ({{ (item.confidence * 100) | number:'1.0-0' }}%)
+            </span>
+          </div>
+        </div>
+
+        <!-- Acciones -->
+        <div class="item-actions">
+          <button class="add-to-selector-btn" (click)="selectDetectedItem(item)">
+            👕 Usar en Selector
+          </button>
+          
+          <button class="add-to-wardrobe-btn" (click)="addToWardrobe(item)">
+            💾 Agregar a Guardarropa
+          </button>
+          
+          <button class="view-original-btn" (click)="openOriginalLink(item.sourceUrl!)">
+            🔗 Ver Original
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Estado sin resultados -->
+  <div *ngIf="analysisComplete && detectedItems.length === 0" class="no-results">
+    <h3>😕 No se detectaron prendas</h3>
+    <p>No pudimos encontrar productos de ropa en esta página. Intenta con:</p>
+    <ul>
+      <li>Una página específica de producto (no la página principal)</li>
+      <li>Uno de los sitios web soportados</li>
+      <li>Un enlace directo a una prenda específica</li>
+    </ul>
+  </div>
+
+  <!-- Información sobre la funcionalidad -->
+  <div class="info-section">
+    <h4>ℹ️ Cómo funciona el detector</h4>
+    <div class="info-grid">
+      <div class="info-card">
+        <h5>🔍 Detección Automática</h5>
+        <p>Analizamos el contenido de la página web para identificar productos de ropa automáticamente.</p>
+      </div>
+      
+      <div class="info-card">
+        <h5>🏷️ Extracción de Datos</h5>
+        <p>Extraemos información como nombre, precio, marca, color y descripción del producto.</p>
+      </div>
+      
+      <div class="info-card">
+        <h5>⚡ Integración Rápida</h5>
+        <p>Los productos detectados se pueden agregar directamente a tu guardarropa o selector.</p>
+      </div>
+    </div>
+
+    <!-- Limitaciones actuales -->
+    <div class="limitations">
+      <h5>⚠️ Limitaciones actuales (versión demo)</h5>
+      <ul>
+        <li>Los resultados son simulados para demostrar la funcionalidad</li>
+        <li>El análisis real requiere implementar web scraping o APIs de tiendas</li>
+        <li>Algunos sitios pueden bloquear el acceso automatizado</li>
+        <li>La detección con IA de imágenes está planificada para futuras versiones</li>
+      </ul>
+    </div>
+
+    <!-- Próximas mejoras -->
+    <div class="future-features">
+      <h5>🚀 Próximas mejoras</h5>
+      <div class="feature-list">
+        <span class="feature pending">🔄 Web scraping real</span>
+        <span class="feature pending">🤖 IA de análisis de imágenes</span>
+        <span class="feature pending">📊 Comparación de precios</span>
+        <span class="feature pending">🔔 Alertas de ofertas</span>
+        <span class="feature pending">📱 Extensión del navegador</span>
+      </div>
+    </div>
+  </div>
+</div>

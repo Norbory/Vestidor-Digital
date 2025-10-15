@@ -1,0 +1,129 @@
+<div class="image-viewer">
+  <h2>Vista Previa del Conjunto</h2>
+  
+  <!-- Configuración de imagen base -->
+  <div class="base-image-section">
+    <h3>Tu Foto Base</h3>
+    <div class="image-upload">
+      <img [src]="baseImageUrl" alt="Imagen base" class="base-image" onerror="this.src='https://upload.wikimedia.org/wikipedia/commons/9/99/Sample_User_Icon.png'">
+      <input type="file" (change)="uploadBaseImage($event)" accept="image/*" #fileInput>
+      <button (click)="fileInput.click()" class="upload-btn">
+        <i class="icon-upload">📁</i>
+        Cambiar foto base
+      </button>
+    </div>
+  </div>
+
+  <!-- Configuración de token Gemini -->
+  <div class="token-section" *ngIf="showTokenInput || !geminiToken">
+    <h3>🤖 Configuración de Gemini 2.0 Flash API</h3>
+    <div class="token-input">
+      <input 
+        type="password" 
+        [(ngModel)]="geminiToken" 
+        placeholder="Ingresa tu token de Gemini API o usa 'demo-token' para probar"
+        class="token-field">
+      <button (click)="saveToken()" class="save-token-btn">💾 Guardar</button>
+    </div>
+    <div class="token-help">
+      <p><strong>💡 Para probar:</strong> Usa <code>demo-token</code> para una simulación</p>
+      <p><strong>🔑 Token real:</strong> <a href="https://aistudio.google.com/app/apikey" target="_blank">Obtener en Google AI Studio</a></p>
+      <p><strong>🚀 Modelo:</strong> Gemini 2.0 Flash (más rápido y preciso)</p>
+    </div>
+  </div>
+
+  <!-- Conjunto actual -->
+  <div class="current-outfit" *ngIf="currentOutfit && currentOutfit.items.length > 0">
+    <h3>👕 Conjunto Seleccionado ({{ currentOutfit.items.length }} prendas)</h3>
+    <div class="outfit-items">
+      <div *ngFor="let item of currentOutfit.items" class="outfit-item">
+        <img [src]="item.imageUrl" [alt]="item.name" onerror="this.src='https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRwJWILte5-zfYj7fNK_E9ygudB0FgJ37RNRQ&s'">
+        <span>{{ item.name }}</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Estado cuando no hay prendas -->
+  <div class="no-selection" *ngIf="selectedItems.length === 0">
+    <div class="welcome-message">
+      <h3>👋 ¡Bienvenido al Vestidor Virtual!</h3>
+      <p>Para comenzar:</p>
+      <ol>
+        <li>Ve a la pestaña <strong>"Selector"</strong></li>
+        <li>Elige las prendas que te gusten</li>
+        <li>Regresa aquí para generar tu imagen</li>
+      </ol>
+      <div class="demo-prompt">
+        <p>💡 <strong>Tip:</strong> Usa el token <code>demo-token</code> para probar sin API real</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Imagen generada -->
+  <div class="generated-section">
+    <div class="controls">
+      <button 
+        (click)="generateWithGemini()" 
+        [disabled]="isGenerating || selectedItems.length === 0"
+        class="generate-btn">
+        <span *ngIf="!isGenerating">🎨 Generar con Gemini</span>
+        <span *ngIf="isGenerating">⏳ Generando...</span>
+      </button>
+      
+      <button 
+        (click)="clearSelection()" 
+        [disabled]="selectedItems.length === 0"
+        class="clear-btn">
+        🗑️ Limpiar
+      </button>
+    </div>
+
+    <!-- Resultado generado -->
+    <div class="result-area">
+      <div *ngIf="isGenerating" class="loading">
+        <div class="spinner"></div>
+        <p>Generando tu imagen personalizada...</p>
+      </div>
+
+      <div *ngIf="generatedImageUrl && !isGenerating" class="generated-result">
+        <h3>Resultado Generado</h3>
+        <img [src]="generatedImageUrl" alt="Imagen generada" class="generated-image">
+        <div class="result-actions">
+          <button class="download-btn">💾 Descargar</button>
+          <button class="save-outfit-btn">⭐ Guardar conjunto</button>
+        </div>
+      </div>
+
+      <div *ngIf="!generatedImageUrl && !isGenerating && selectedItems.length > 0" class="placeholder">
+        <div class="preview-placeholder">
+          <p>👕 Selecciona prendas y haz click en "Generar con Gemini"</p>
+          <p>para ver cómo se verían puestas</p>
+        </div>
+      </div>
+
+      <div *ngIf="selectedItems.length === 0 && !isGenerating" class="empty-state">
+        <p>👈 Selecciona prendas del selector para comenzar</p>
+      </div>
+    </div>
+
+    <!-- Mensajes de error -->
+    <div *ngIf="errorMessage" class="error-message">
+      <p>❌ {{ errorMessage }}</p>
+    </div>
+  </div>
+
+  <!-- Info sobre el proceso -->
+  <div class="info-section">
+    <h4>ℹ️ Cómo funciona con Gemini 2.0 Flash</h4>
+    <ul>
+      <li>📷 Sube tu foto base (opcional)</li>
+      <li>🔑 Configura tu token de Gemini 2.0 Flash API</li>
+      <li>👕 Selecciona prendas del selector (ve a la pestaña "Selector")</li>
+      <li>🎨 Genera la imagen con IA de Google</li>
+      <li>⭐ Guarda tus conjuntos favoritos</li>
+    </ul>
+    <div class="tech-info">
+      <p><strong>🚀 Tecnología:</strong> Gemini 2.0 Flash - El modelo más reciente de Google para generación de contenido</p>
+    </div>
+  </div>
+</div>
