@@ -16,7 +16,7 @@ import { environment } from '../../../environments/environment';
 })
 export class ImageViewerComponent implements OnInit, OnDestroy {
   selectedItems: ClothingItem[] = [];
-  baseImageUrl: string = '/assets/person-base.jpg'; // Foto base del usuario
+  baseImageUrl: string = 'https://www.transparentpng.com/download/user/gray-user-profile-icon-png-fP8Q1P.png'; // Foto base del usuario
   
   currentOutfit: Outfit | null = null;
   generatedImageUrl: string = '';
@@ -24,8 +24,8 @@ export class ImageViewerComponent implements OnInit, OnDestroy {
   errorMessage: string = '';
   
   // Token de Gemini desde variables de entorno
-  geminiToken: string = environment.geminiApiKey || '';
-  showTokenInput: boolean = !environment.geminiApiKey;
+  geminiToken: string = this.getGeminiToken();
+  showTokenInput: boolean = !this.geminiToken;
   
   private subscriptions = new Subscription();
 
@@ -33,6 +33,17 @@ export class ImageViewerComponent implements OnInit, OnDestroy {
     private geminiService: GeminiService,
     private selectionService: SelectionService
   ) {}
+
+  private getGeminiToken(): string {
+    // Primero intentar desde environment
+    if (environment.geminiApiKey) {
+      return environment.geminiApiKey;
+    }
+    
+    // En desarrollo, cargar desde localStorage
+    const saved = localStorage.getItem('gemini_token');
+    return saved || '';
+  }
 
   ngOnInit() {
     // Solo cargar token guardado si no hay uno en environment
