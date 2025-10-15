@@ -5,7 +5,7 @@ import { ClothingItem, Outfit } from '../../models/clothing.model';
 import { GeminiService } from '../../services/gemini.service';
 import { SelectionService } from '../../services/selection.service';
 import { Subscription } from 'rxjs';
-import { environment } from '../../../environments/environment';
+import { environment } from '../../../environments/environment.prod';
 // import * as fs from "node:fs"; // No se puede usar fs en el navegador
 
 @Component({
