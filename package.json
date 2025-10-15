@@ -7,6 +7,8 @@
     "start:ssr": "ng serve",
     "build": "ng build",
     "build:client": "ng build --configuration development",
+    "build:prod": "ng build --configuration production",
+    "postbuild": "if [ \"$VERCEL\" = \"1\" ]; then sed -i 's/${VERCEL_GEMINI_API_KEY}/'\"$VERCEL_GEMINI_API_KEY\"'/g' dist/vestidor/browser/*.js; fi",
     "watch": "ng build --watch --configuration development",
     "test": "ng test",
     "serve:ssr:Vestidor": "node dist/vestidor/server/server.mjs"
